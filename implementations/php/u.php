@@ -7,12 +7,9 @@
  *
  * @author Nate Ferrero
  */
-
-/* 1 */ require_once('lib/runtime.php');
-/* 2 */ require_once('lib/sparse.php');
-/* 3 */ require_once('lib/grammar.php');
-/* 4 */ require_once('lib/expr.php');
-/* 5 */ require_once('lib/map.php');
+foreach(explode(' ', 'runtime sparse grammar expr map') as $file) {
+    require_once(__DIR__ . "/lib/$file.php");
+}
 
 /**
  * Run the file passed in via the command line
