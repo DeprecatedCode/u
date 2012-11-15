@@ -10,6 +10,11 @@
 namespace NateFerrero\u;
 
 /**
+ * Handled Exception
+ */
+class HandledException extends \Exception {}
+
+/**
  * Runtime class
  */
 class Runtime {
@@ -19,24 +24,64 @@ class Runtime {
      * Indicate a problem
      */
     public static function error($code, $context, $object = null) {
-        echo '[u error] ' . $code; die;
+        echo '[u error] ' . $code;
+        if(!is_null($context)) {
+            echo ': ' . self::repr($context);
+        }
+        if(!is_null($object)) {
+            echo ': ' . self::repr($object);
+        }
+        echo "\n";
+        throw new HandledException;
+    }
+
+    /**
+     * Representation of an object
+     */
+    public static function repr(&$var) {
+        if(is_null($var)) {
+            return "void";
+        }
+        if(is_bool($var)) {
+            return $var ? "true" : "false";
+        }
+        if(is_int($var) || is_float($var)) {
+            return "$var";
+        }
+        if(is_string($var)) {
+            return "\"$var\"";
+        }
+        if(is_object($var)) {
+            if(method_exists($var, '__repr')) {
+                return $var->__repr($var);
+            }
+        }
+        return '< ? >';
     }
 
     /**
      * Execute a u program from a file
      */
     public static function run($file) {
-        if(!is_file($file)) {
-            self::error('file-not-found', $file);
+        try {
+            if(!is_file($file)) {
+                self::error('file-not-found', $file);
+            }
+            return self::exec(file_get_contents($file));
+        } catch(HandledException $e) {
+            // Do nothing
         }
-        return self::exec(file_get_contents($file));
     }
 
     /**
      * Execute a u program from a string
      */
     public static function exec($str) {
-        $tokens = self::$parser->apply($str);
-        print_r($tokens);die;
+        try {
+            $tokens = self::$parser->apply($str);
+            echo json_encode($tokens);die;
+        } catch(HandledException $e) {
+            // Do nothing
+        }
     }
 }

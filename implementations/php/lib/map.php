@@ -10,6 +10,9 @@
 namespace NateFerrero\u;
 use NateFerrero\u\Runtime;
 
+/**
+ * Map
+ */
 class Map {
 
     /**
@@ -45,13 +48,13 @@ class Map {
      */
     public function get($key, &$value) {
         if(is_int($key)) {
-            if(!isset($this->ints[$key]) {
+            if(!isset($this->ints[$key])) {
                 Runtime::error('map-key-not-found', $this, $key);
             }
             return $this->ints[$key];
         }
         else if(is_str($key)) {
-            if(!isset($this->strings[$key]) {
+            if(!isset($this->strings[$key])) {
                 Runtime::error('map-key-not-found', $this, $key);
             }
             return $this->strings[$key];

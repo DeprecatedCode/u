@@ -1,0 +1,28 @@
+/**
+ * Module comment if first item in file
+ */
+
+# Define three keys
+a: 6
+b: 7
+c: 8
+
+# Print values
+system.out[a, b, c]
+
+# Print key-values
+system.out["should-be-9": a + 3]
+
+# Import a single item, or merged items (no keys)
+complex1: system.import["complex.u", "other.u"]
+
+# Import as map with keys, and apply to this
+&this: system.import[complex2: "complex.u"]
+
+params: ["Mua", repeat: "ha" * 3]
+
+# Apply parameters by creating a scoped map
+complex1.laugh[&params]
+
+# Apply parameters with a grouping to separate items
+complex2.laugh(params)

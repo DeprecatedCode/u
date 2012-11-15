@@ -1,0 +1,2 @@
+#! /bin/sh
+php ./implementations/php/u.php $1

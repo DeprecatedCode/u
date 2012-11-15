@@ -15,5 +15,8 @@
 /* 5 */ require_once('lib/map.php');
 
 /**
- * Do not add anything except require_once statements to this file
+ * Run the file passed in via the command line
  */
+if(isset($argv) && isset($argv[1])) {
+    NateFerrero\u\Runtime::run($argv[1]);
+}
