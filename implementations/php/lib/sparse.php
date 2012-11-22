@@ -42,8 +42,7 @@ class Sparse {
      * Apply the grammar to a string, generating an array of tokens
      */
     public function apply($str, $context='root') {
-        $doc = new SparseDocument($this->grammar, $str, $context);
-        return $doc->tokenize();
+        return new SparseDocument($this->grammar, $str, $context);
     }
 }
 
@@ -73,6 +72,13 @@ class SparseDocument {
         $tmp = $this->node(null);;
         $this->tree = &$tmp;
         $this->tip = &$tmp;
+    }
+
+    /**
+     * Get the tree
+     */
+    public function getTree() {
+        return $this->tree;
     }
 
     /**
@@ -127,24 +133,6 @@ class SparseDocument {
      * Tokenize
      */
     public function &tokenize() {
-
-        /*
-        TODO Add as proper test
-
-        $this->descend('A');
-        $this->descend('B');
-        $this->descend('C');
-        $this->child('@d');
-        $this->ascend('--c--');
-        $this->child('@c');
-        $this->ascend('--b--');
-        $this->child('@b1');
-        $this->child('@b2');
-        $this->child('@b3');
-        $this->ascend('--a--');
-
-        echo "After Tree: "; print_r($this->tree);
-        */
 
         while($this->pointer < $this->length) {
             /**

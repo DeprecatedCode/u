@@ -78,7 +78,7 @@ class Runtime {
      */
     public static function exec($str) {
         try {
-            $tokens = self::$parser->apply($str);
+            $tokens = self::$parser->apply($str)->tokenize();;
             echo json_encode($tokens);die;
         } catch(HandledException $e) {
             // Do nothing

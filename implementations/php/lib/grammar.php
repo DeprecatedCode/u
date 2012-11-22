@@ -33,11 +33,11 @@ Runtime::$parser = new Sparse(array(
         'comment-['   => '/' . '*',
         'comment-]'   => '*' . '/',
         'comment'     => array('#', '/' . '/'),
-        'value'       => ':',
+        'colon'       => ':',
         'group-('     => '(',
         'group-)'     => ')',
         'inclusion'   => '&',
-        'key'         => '.',
+        'dot'         => '.',
         'identifier'  => '/[a-zA-Z_][a-zA-Z0-9_]+/',
         'float'       => '/\d+\.\d*/',
         'int'         => '/\d+/',
@@ -55,8 +55,8 @@ Runtime::$parser = new Sparse(array(
             'expr-{', 'comment-[', 'comment', 'group-('
         ),
         '&inline' => array(
-            'sep', 'break', 'space', 'value', 'identifier',
-            'float', 'int', 'operator', 'comparator'
+            'sep', 'break', 'space', 'colon', 'identifier',
+            'float', 'int', 'operator', 'comparator', 'dot'
         )
     ),
 
