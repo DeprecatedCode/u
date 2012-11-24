@@ -8,9 +8,32 @@ use NateFerrero\u\SparseDocument;
 
 class SparseTest {
 
+    public $parser;
+
+    public function __construct() {
+        /**
+         * Define a simple grammar for testing, containing
+         * a group (in parenthesis) and words, separated by space.
+         */
+        $this->parser = new Sparse(array(
+            'root' => array(
+                '&children' => array('group-enter'),
+                '&inline' => array('space', 'word')
+            ),
+            'group-enter' => array(
+                '&exit' => array('group-exit')
+            ),
+            '&tokens' => array(
+                'group-enter' => '(',
+                'group-exit'  => ')',
+                'space'       => '/\s+/',
+                'word'       => '/\w+/'
+            )
+        ));
+    }
+
     public function testTreeGeneration() {
-        $parser = new Sparse(array('root' => array(), '&tokens' => array()));
-        $doc = $parser->apply('', 'root');
+        $doc = $this->parser->apply('', 'root');
         $doc->descend('A');
         $doc->descend('B');
         $doc->descend('C');
@@ -54,8 +77,25 @@ class SparseTest {
 
     }
 
-    public function fail() {
-        check(false, true);
+    public function testEmptyDoc() {
+        $str = '';
+        $tree = $this->parser->apply($str, 'root')->tokenize();
+        check($tree, array(
+            'token' => 'root',
+            'match' => null,
+            'content' => null
+        ));
+    }
+
+    public function testWordOnlyDoc() {
+        $str = 'battle';
+        $tree = $this->parser->apply($str, 'root')->tokenize();
+        print_r($tree);die;
+        check($tree, array(
+            'token' => 'root',
+            'match' => null,
+            'content' => null
+        ));
     }
 
 }

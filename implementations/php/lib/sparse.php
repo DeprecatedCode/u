@@ -84,13 +84,12 @@ class SparseDocument {
     /**
      * Create a node
      */
-    public function node($match) {
-        if(!isset($this->grammar[$this->context])) {
-           throw new ParseException($this->line, $this->col,
-               "invalid-context", $this->context);
+    public function node($context, $match) {
+        if(!isset($this->grammar[$context])) {
+            $this->fail("undefined-token: $context");
         }
         return array(
-            'token' => $this->context,
+            'token' => $context,
             'match' => $match,
             'content' => null
         );
@@ -99,8 +98,8 @@ class SparseDocument {
     /**
      * Create a child of the tip
      */
-    public function &child($match) {
-        $tmp = $this->node($match);
+    public function &child($context, $match) {
+        $tmp = $this->node($context, $match);
         if(!isset($this->tip['children'])) {
             $this->tip['children'] = array();
         }
@@ -111,11 +110,12 @@ class SparseDocument {
     /**
      * Drop into a child token
      */
-    public function descend($match) {
+    public function descend($context, $match) {
         $this->stack[] = &$this->tip;
-        $tmp = &$this->child($match);
+        $tmp = &$this->child($context, $match);
         unset($this->tip);  # Break ref
         $this->tip = &$tmp;
+        $this->context = $context;
     }
 
     /**
@@ -127,6 +127,10 @@ class SparseDocument {
         array_pop($this->stack);
         unset($this->tip);  # Break ref
         $this->tip = &$tmp;
+        if(!is_array($this->tip)) {
+            $this->fail("cannot-ascend");
+        }
+        $this->context = $this->tip['token'];
     }
 
     /**
@@ -138,20 +142,52 @@ class SparseDocument {
             /**
              * Current context instructions
              */
-            $scope = $this->grammer[$context];
+            $scope = $this->grammar[$this->context];
 
             /**
              * Handle children first
              */
             if(isset($scope['&children'])) {
                 foreach($scope['&children'] as $def) {
-                   echo $def . '   ';
+                   echo 'x';
                 }
             }
-            throw new ParseException($this->line, $this->col, "no-match",
-                substr($this->str, $this->pointer));
+
+            /**
+             * Handle inline tokens
+             */
+            if(isset($scope['&inline'])) {
+                foreach($scope['&inline'] as $def) {
+                   $match = $this->attempt($def);
+                   if(!is_null($match)) {
+                        $this->child($match, )
+                   }
+                }
+            }
+            $this->fail("no-match");
         }
 
         return $this->tree;;
+    }
+
+    /**
+     * How many characters to show near a failure
+     */
+    const FAIL_NEAR_LENGTH = 20;
+
+    /**
+     * Throw an exception
+     */
+    private function fail($why) {
+        $near = substr($this->str, $this->pointer);
+        if(strlen($near) > self::FAIL_NEAR_LENGTH) {
+            $near = substr($near, 0, self::FAIL_NEAR_LENGTH) . '...';
+        }
+        throw new ParseException(
+            $this->line,
+            $this->col,
+            $why,
+            $near
+        );
     }
 }
