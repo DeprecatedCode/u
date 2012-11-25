@@ -21,29 +21,36 @@ class SparseTest {
                 '&inline' => array('space', 'word')
             ),
             'group-enter' => array(
+                '&content' => 'root',
                 '&exit' => array('group-exit')
+            ),
+            'string' => array(
+                '&content' => '&literal',    throw new Exception("TEST LITERAL", 1);
+                
+                '&exit' => array('string')
             ),
             '&tokens' => array(
                 'group-enter' => '(',
                 'group-exit'  => ')',
                 'space'       => '/\s+/',
-                'word'       => '/\w+/'
+                'word'        => '/\w+/',
+                'string'      => '"'
             )
         ));
     }
 
     public function testTreeGeneration() {
         $doc = $this->parser->apply('', 'root');
-        $doc->descend('A');
-        $doc->descend('B');
-        $doc->descend('C');
-        $doc->child('@d');
+        $doc->descend('root', 'A');
+        $doc->descend('root', 'B');
+        $doc->descend('root', 'C');
+        $doc->child('root', '@d');
         $doc->ascend('--c--');
-        $doc->child('@c');
+        $doc->child('root', '@c');
         $doc->ascend('--b--');
-        $doc->child('@b1');
-        $doc->child('@b2');
-        $doc->child('@b3');
+        $doc->child('root', '@b1');
+        $doc->child('root', '@b2');
+        $doc->child('root', '@b3');
         $doc->ascend('--a--');
 
         $tree = $doc->getTree();
@@ -74,7 +81,6 @@ class SparseTest {
         check($_d['match'], '@d');
         check(isset($_d['exit']), false);
         check(isset($_d['children']), false);
-
     }
 
     public function testEmptyDoc() {
@@ -83,19 +89,172 @@ class SparseTest {
         check($tree, array(
             'token' => 'root',
             'match' => null,
-            'content' => null
         ));
     }
 
     public function testWordOnlyDoc() {
         $str = 'battle';
         $tree = $this->parser->apply($str, 'root')->tokenize();
-        print_r($tree);die;
         check($tree, array(
             'token' => 'root',
             'match' => null,
-            'content' => null
+            'children' => array(array(
+                'token' => 'word',
+                'match' => 'battle',
+            ))
         ));
     }
 
+    public function testSpaceOnlyDoc() {
+        $str = '     ';
+        $tree = $this->parser->apply($str, 'root')->tokenize();
+        check($tree, array(
+            'token' => 'root',
+            'match' => null,
+            'children' => array(array(
+                'token' => 'space',
+                'match' => '     ',
+            ))
+        ));
+    }
+
+    public function testInlineOnlyDoc() {
+        $str = ' battle  of   the  ages ';
+        $tree = $this->parser->apply($str, 'root')->tokenize();
+        check($tree, array(
+            'token' => 'root',
+            'match' => null,
+            'children' => array(
+                space_arr(1),
+                word_arr('battle'),    # battle
+                space_arr(2),
+                word_arr('of'),        # of
+                space_arr(3),
+                word_arr('the'),       # the
+                space_arr(2),
+                word_arr('ages'),      # ages
+                space_arr(1)
+            )
+        ));
+    }
+
+    public function testUnclosedGroup() {
+        $str = '(';
+        $tree = $this->parser->apply($str, 'root')->tokenize();
+        check($tree, array(
+            'token' => 'root',
+            'match' => null,
+            'children' => array(array(
+                'token' => 'group-enter',
+                'match' => '(',
+            ))
+        ));
+    }
+
+    public function testEmptyGroup() {
+        $str = '()';
+        $tree = $this->parser->apply($str, 'root')->tokenize();
+        check($tree, array(
+            'token' => 'root',
+            'match' => null,
+            'children' => array(array(
+                'token' => 'group-enter',
+                'match' => '(',
+                'exit' => ")"
+            ))
+        ));
+    }
+
+    public function testNestedGroups() {
+        $str = '(()())';
+        $tree = $this->parser->apply($str, 'root')->tokenize();
+        check($tree, array(
+            'token' => 'root',
+            'match' => null,
+            'children' => array(array(
+                'token' => 'group-enter',
+                'match' => '(',
+                'children' => array(
+                    array(
+                        'token' => 'group-enter',
+                        'match' => '(',
+                        'exit' => ")"
+                    ),
+                    array(
+                        'token' => 'group-enter',
+                        'match' => '(',
+                        'exit' => ")"
+                    )
+                ),
+                'exit' => ")"
+            ))
+        ));
+    }
+
+    public function testComplexGroupsAndWords() {
+        $str = 'once( upon(a  )time   (there)    lived)a     moose';
+        $tree = $this->parser->apply($str, 'root')->tokenize();
+
+        check($tree, array(
+            'token' => 'root',
+            'match' => null,
+            'children' => array(
+                word_arr('once'),                       #   once
+                array(
+                    'token' => 'group-enter',
+                    'match' => '(',                     #   (
+                    'children' => array(
+                        space_arr(1),
+                        word_arr('upon'),               #       upon
+                        array(
+                            'token' => 'group-enter',
+                            'match' => '(',             #       (
+                            'children' => array(
+                                word_arr('a'),          #           a
+                                space_arr(2)
+                            ),
+                            'exit' => ')'               #       )
+                        ),
+                        word_arr('time'),               #       time
+                        space_arr(3),
+                        array(
+                            'token' => 'group-enter',
+                            'match' => '(',             #       (
+                            'children' => array(
+                                word_arr('there'),      #           there
+                            ),
+                            'exit' => ')'               #       )
+                        ),
+                        space_arr(4),
+                        word_arr('lived'),              #       lived
+                    ),
+                    'exit' => ")"                       #   )
+                ),
+                word_arr('a'),                          #   a
+                space_arr(5),
+                word_arr('moose')                       #   moose
+            )
+        ));
+    }
+
+}
+
+/**
+ * Space token fixture
+ */
+function space_arr($num) {
+    return array(
+        'token' => 'space',
+        'match' => str_repeat(' ', $num),
+    );
+}
+
+/**
+ * Word token fixture
+ */
+function word_arr($word) {
+    return array(
+        'token' => 'word',
+        'match' => $word,
+    );
 }

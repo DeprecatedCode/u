@@ -69,7 +69,7 @@ class Runtime {
             }
             return self::exec(file_get_contents($file));
         } catch(HandledException $e) {
-            // Do nothing
+            # Do nothing
         }
     }
 
@@ -78,10 +78,23 @@ class Runtime {
      */
     public static function exec($str) {
         try {
-            $tokens = self::$parser->apply($str)->tokenize();;
+            $tokens = self::parse($str);
             echo json_encode($tokens);die;
         } catch(HandledException $e) {
-            // Do nothing
+            # Do nothing
+        }
+    }
+
+    /**
+     * Generate tokens from a string
+     */
+    public static function parse($str) {
+        try {
+            return self::$parser->apply($str, 'root')->tokenize();
+        } catch(ParseException $e) {
+            self::error('parse-error', $e->getMessage());
+        } catch(HandledException $e) {
+            # Do nothing
         }
     }
 }

@@ -52,8 +52,11 @@ class Sparse {
 class SparseDocument {
 
     private $pointer = 0;
-    private $line = 0;
-    private $col = 0;
+    private $line = 1;
+    private $col = 1;
+    private $_pointer = 0;
+    private $_line = 1;
+    private $_col = 1;
     private $length = 0;
     private $str;
     private $tokens;
@@ -69,7 +72,7 @@ class SparseDocument {
         $this->length = strlen($str);
         $this->tokens = $grammar['&tokens'];
         $this->context = $context;
-        $tmp = $this->node(null);;
+        $tmp = $this->node($context, null);;
         $this->tree = &$tmp;
         $this->tip = &$tmp;
     }
@@ -84,22 +87,18 @@ class SparseDocument {
     /**
      * Create a node
      */
-    public function node($context, $match) {
-        if(!isset($this->grammar[$context])) {
-            $this->fail("undefined-token: $context");
-        }
+    public function node($token, $match) {
         return array(
-            'token' => $context,
-            'match' => $match,
-            'content' => null
+            'token' => $token,
+            'match' => $match
         );
     }
 
     /**
      * Create a child of the tip
      */
-    public function &child($context, $match) {
-        $tmp = $this->node($context, $match);
+    public function &child($token, $match) {
+        $tmp = $this->node($token, $match);
         if(!isset($this->tip['children'])) {
             $this->tip['children'] = array();
         }
@@ -110,12 +109,15 @@ class SparseDocument {
     /**
      * Drop into a child token
      */
-    public function descend($context, $match) {
+    public function descend($token, $match) {
+        if(!isset($this->grammar[$token])) {
+            $this->fail("invalid-context: $token");
+        }
         $this->stack[] = &$this->tip;
-        $tmp = &$this->child($context, $match);
+        $tmp = &$this->child($token, $match);
         unset($this->tip);  # Break ref
         $this->tip = &$tmp;
-        $this->context = $context;
+        $this->context = $token;
     }
 
     /**
@@ -142,14 +144,48 @@ class SparseDocument {
             /**
              * Current context instructions
              */
-            $scope = $this->grammar[$this->context];
+            $scope = &$this->grammar[$this->context];
+
+            /**
+             * Prefetch exit condition in case of context jump
+             */
+            $exit = isset($scope['&exit']) ? $scope['&exit'] : null;
+            $absorb = false;
+            if(isset($scope['&exit+'])) {
+                $exit = $scope['&exit+'];
+                $absorb = true;
+            }
+
+            /**
+             * Whether or not to absorb non-matching chars
+             */
+            $literal = false;
+
+            /**
+             * Jump to context with content
+             */
+            if(isset($scope['&content'])) {
+                $content = $scope['&content'];
+                if($content === '&literal') {
+                    $literal = true;
+                } else {
+                    if(!isset($this->grammar[$content])) {
+                        $this->fail("invalid-content: $content");
+                    }
+                    $scope = &$this->grammar[$content];  # Process as if this were $content
+                }
+            }
 
             /**
              * Handle children first
              */
             if(isset($scope['&children'])) {
-                foreach($scope['&children'] as $def) {
-                   echo 'x';
+                foreach($scope['&children'] as $token) {
+                    $match = $this->attempt($token);
+                    if(!is_null($match)) {
+                        $this->descend($token, $match);
+                        continue 2;  # Match found, progress forward
+                    }
                 }
             }
 
@@ -157,17 +193,143 @@ class SparseDocument {
              * Handle inline tokens
              */
             if(isset($scope['&inline'])) {
-                foreach($scope['&inline'] as $def) {
-                   $match = $this->attempt($def);
-                   if(!is_null($match)) {
-                        $this->child($match, )
-                   }
+                foreach($scope['&inline'] as $token) {
+                    $match = $this->attempt($token);
+                    if(!is_null($match)) {
+                        $this->child($token, $match);
+                        continue 2;  # Match found, progress forward
+                    }
                 }
             }
-            $this->fail("no-match");
+
+            /**
+             * Handle exit tokens
+             */
+            if(!is_null($exit)) {
+                if(!is_array($exit)) {
+                    $exit = array($exit);
+                }
+                foreach($exit as $token) {
+                    $match = $this->attempt($token);
+                    if(!is_null($match)) {
+                        /**
+                         * Absorb right-content (exit)
+                         */
+                        if($literal && $absorb) {
+                            $this->tip['content'] .= $match;
+                        }
+                        $this->ascend($match);
+                        continue 2;  # Match found, progress forward
+                    }
+                }
+            }
+
+            /**
+             * Check literal flag and absorb a single character at a time
+             */
+            if($literal) {
+                $char = $this->str[$this->pointer];
+                $this->tip['content'] .= $char;
+                $this->advance($char);
+                continue;
+            }
+            $this->fail("no-match: $this->context");
         }
 
         return $this->tree;;
+    }
+
+    /**
+     * Attempt to match a token
+     */
+    public function attempt($token) {
+        if(!isset($this->tokens[$token])) {
+            $this->fail("invalid-token: $token");
+        }
+        return $this->match($this->tokens[$token]);
+    }
+
+    /**
+     * Match a value
+     */
+    public function match($value) {
+        /**
+         * Handle multiple matches per token
+         */
+        if(is_array($value)) {
+            foreach($value as $v) {
+                $match = $this->match($v);
+                if(!is_null($match)) {
+                    return $match;
+                }
+            }
+            return null;
+        }
+
+        /**
+         * Verify type
+         */
+        if(!is_string($value) || $value === '') {
+            $this->fail("bad-token-type");
+        }
+
+        $len = strlen($value);
+
+        /**
+         * Match a regular expression
+         */
+        if($len > 2 && $value[0] === '/' && $value[$len - 1] === '/') {
+            $match = preg_match($value . 'A', $this->str, $matches,  # A = Anchored
+                PREG_OFFSET_CAPTURE, $this->pointer);
+
+            /**
+             * Must match at the current pointer position
+             */
+            if($match === 1 && $matches[0][1] === $this->pointer) {
+                $match = $matches[0][0];
+                $this->advance($match);
+                return $match;
+            }
+        }
+
+        /**
+         * Match a literal string
+         */
+        else if(substr($this->str, $this->pointer, $len) === $value) {
+            $this->advance($value);
+            return $value;
+        }
+
+        /**
+         * No match
+         */
+        return null;
+    }
+
+    /**
+     * Advance the pointer by string
+     */
+    public function advance($str) {
+        $this->_pointer = $this->pointer;
+        $this->_line = $this->line;
+        $this->_col = $this->col;
+        $len = strlen($str);
+        $this->pointer += $len;
+        for($i = 0; $i < $len; $i++) {
+            if($str[$i] == "\r") {
+                if(isset($str[$i + 1]) && $str[$i + 1] == "\n") {
+                    $i++;
+                }
+                $this->line++;
+                $this->col = 1;
+            }
+            else if($str[$i] == "\n") {
+                $this->line++;
+                $this->col = 1;
+            } else {
+                $this->col++;
+            }
+        }
     }
 
     /**
@@ -179,13 +341,13 @@ class SparseDocument {
      * Throw an exception
      */
     private function fail($why) {
-        $near = substr($this->str, $this->pointer);
+        $near = substr($this->str, $this->_pointer);
         if(strlen($near) > self::FAIL_NEAR_LENGTH) {
             $near = substr($near, 0, self::FAIL_NEAR_LENGTH) . '...';
         }
         throw new ParseException(
-            $this->line,
-            $this->col,
+            $this->_line,
+            $this->_col,
             $why,
             $near
         );

@@ -50,7 +50,7 @@ Runtime::$parser = new Sparse(array(
      * Root context
      */
     'root' => array(
-        '&child' => array(
+        '&children' => array(
             'map-[', 'str-3-s', 'str-3-d', 'str-1-s', 'str-1-d',
             'expr-{', 'comment-[', 'comment', 'group-('
         ),
@@ -65,8 +65,7 @@ Runtime::$parser = new Sparse(array(
      */
     'str-3-s' => array(
         '&exit' => 'str-3-s',
-        '&content' => '&literal',
-        '&size' => '&inner'
+        '&content' => '&literal'
     ),
 
     /**
@@ -74,37 +73,33 @@ Runtime::$parser = new Sparse(array(
      */
     'str-3-d' => array(
         '&exit' => 'str-3-d',
-        '&content' => '&literal',
-        '&size' => '&inner'
+        '&content' => '&literal'
     ),
 
     /**
      * Single-quote context
      */
     'str-1-s' => array(
-        '&child' => 'escape',
+        '&children' => array('escape'),
         '&exit' => 'str-1-s',
-        '&content' => '&literal',
-        '&size' => '&inner'
+        '&content' => '&literal'
     ),
 
     /**
      * Double-quote context
      */
     'str-1-d' => array(
-        '&child' => 'escape',
+        '&children' => array('escape'),
         '&exit' => 'str-1-d',
-        '&content' => '&literal',
-        '&size' => '&inner'
+        '&content' => '&literal'
     ),
 
     /**
      * Escape context
      */
     'escape' => array(
-        '&exit' => 'char',
-        '&content' => '&literal',
-        '&size' => '&right'
+        '&exit+' => 'char',
+        '&content' => '&literal'
     ),
 
     /**
@@ -128,7 +123,6 @@ Runtime::$parser = new Sparse(array(
      */
     'comment-[' => array(
         '&content' => '&literal',
-        '&size' => '&inner',
         '&exit' => 'comment-]'
     ),
 
@@ -137,7 +131,6 @@ Runtime::$parser = new Sparse(array(
      */
     'comment' => array(
         '&content' => '&literal',
-        '&size' => '&right',
         '&exit' => 'break'
     ),
 

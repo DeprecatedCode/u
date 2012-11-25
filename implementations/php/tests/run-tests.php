@@ -4,40 +4,63 @@
  * Run comprehensive tests agains the PHP implementation of u
  */
 require_once(__DIR__ . '/../u.php');
-$tests = array('lib/sparse' => 'SparseTest');
+require_once(__DIR__ . '/lib/common.php');
 
-class AssertionFailure extends Exception {}
+/**
+ * All test cases to run
+ */
+$tests = array(
+    'lib/sparse.php' => 'SparseTest',
+    'lib/grammar.php' => 'GrammarTest'
+);
 
-function stringize(&$x) {
+/**
+ * Simple string representation of objects for errors
+ */
+function stringize($x, $key = null) {
     if(is_string($x)) {
-        $x = "\"$x\"";
+        $out = "\"$x\"";
     } else if(is_null($x)) {
-        $x = 'NULL';
+        $out = 'NULL';
     } else if(is_bool($x)) {
-        $x = $x ? 'TRUE' : 'FALSE';
+        $out = $x ? 'TRUE' : 'FALSE';
     } else if(is_object($x)) {
-        $x = '<' . get_class($x) . '>';
+        $out = '<' . get_class($x) . '>';
     } else if(is_array($x)) {
-        $x = '[ ' . count($x) . ' ]';
+        $out = '[';
+        foreach($x as $k => $v) {
+            $out .= ($out == '[' ? '' : ', ');
+            $out .= stringize($v, $k);
+        }
+        $out = $out . ']';
     } else {
-        $x = '?';
+        $out = '?';
     }
+    return is_null($key) ? $out : $key . ': ' . $out;
 }
+
+/**
+ * Simple assertion
+ */
+class AssertionFailure extends Exception {}
 
 function check($a, $b) {
     if($a !== $b) {
         $trace = debug_backtrace();
         $last = array_shift($trace);
-        stringize($a);
-        stringize($b);
+        $a = stringize($a);
+        $b = stringize($b);
         throw new AssertionFailure("$a is not $b on line $last[line] of $last[file]");
     }
 }
 
 echo "\n";
 
+/**
+ * Run all tests
+ */
 foreach($tests as $key => $value) {
-    require_once(__DIR__ . '/' . $key . '.php');
+    require_once(__DIR__ . '/' . $key);
     echo $value . "\n    ";
     $list = array();
     foreach(get_class_methods($value) as $method) {
