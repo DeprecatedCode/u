@@ -13,7 +13,6 @@ class GrammarTest {
 		check($tree, array(
 			'token' => 'root',
 			'match' => null,
-			'content' => ''
 		));
 	}
 
@@ -23,7 +22,6 @@ class GrammarTest {
 		check($tree, array(
 			'token' => 'root',
 			'match' => null,
-			'content' => '',
 			'children' => array(
 				token_arr('space', '    ')
 			)
@@ -31,18 +29,56 @@ class GrammarTest {
 	}
 
 	public function testSingleQuoteString() {
-		$str = "'a''\\'";
+		$str = "'a'";
 		$tree = Runtime::parse($str);
 		check($tree, array(
 			'token' => 'root',
 			'match' => null,
-			'content' => '',
 			'children' => array(
 				token_arr('str-1-s', "'", 'a', "'")
-				array(
-					'token' => 'str-1-s',
-					'match' => "'",
-					'content' => 'a', "'")
+			)
+		));
+	}
+
+	public function testIdentifierOnly() {
+		$str = "hello";
+		$tree = Runtime::parse($str);
+		check($tree, array(
+			'token' => 'root',
+			'match' => null,
+			'children' => array(
+				token_arr('identifier', "hello")
+			)
+		));
+	}
+
+	public function testIdentifierAndValue() {
+		$str = "hello: 50";
+		$tree = Runtime::parse($str);
+		check($tree, array(
+			'token' => 'root',
+			'match' => null,
+			'children' => array(
+				token_arr('identifier', "hello"),
+				token_arr('colon', ":"),
+				token_arr('space', " "),
+				token_arr('int', "50")
+			)
+		));
+	}
+
+	public function testNumbersAndIdentifier() {
+		$str = "12 3.4 hello";
+		$tree = Runtime::parse($str);
+		check($tree, array(
+			'token' => 'root',
+			'match' => null,
+			'children' => array(
+				token_arr('int', "12"),
+				token_arr('space', " "),
+				token_arr('float', "3.4"),
+				token_arr('space', " "),
+				token_arr('identifier', "hello")
 			)
 		));
 	}
@@ -51,12 +87,19 @@ class GrammarTest {
 /**
  * Token fixture
  */
-function token_arr($token, $match, $content = '', $exit = null) {
+function token_arr($token, $match, $literal = null, $exit = null) {
 	$arr = array(
 		'token' => $token,
-		'match' => $match,
-		'content' => $content
+		'match' => $match
 	);
+	if(!is_null($literal)) {
+		$arr['children'] = array(
+			array(
+				'token' => '&literal',
+				'match' => $literal
+			)
+		);
+	}
 	if(!is_null($exit)) {
 		$arr['exit'] = $exit;
 	}

@@ -7,7 +7,9 @@
  *
  * @author Nate Ferrero
  */
-foreach(explode(' ', 'runtime sparse grammar expr map') as $file) {
+namespace NateFerrero\u;
+
+foreach(explode(' ', 'runtime engine sparse grammar expr map') as $file) {
     require_once(__DIR__ . "/lib/$file.php");
 }
 
@@ -15,5 +17,10 @@ foreach(explode(' ', 'runtime sparse grammar expr map') as $file) {
  * Run the file passed in via the command line
  */
 if(isset($argv) && isset($argv[1])) {
-    NateFerrero\u\Runtime::run($argv[1]);
+    try {
+        $result = Runtime::run($argv[1]);
+        echo Runtime::repr($result);
+    } catch(HandledException $e) {
+        echo $e->getMessage() . "\n";
+    }
 }

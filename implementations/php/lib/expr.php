@@ -8,7 +8,6 @@
  * @author Nate Ferrero
  */
 namespace NateFerrero\u;
-use NateFerrero\u\Runtime;
 
 /**
  * Expression

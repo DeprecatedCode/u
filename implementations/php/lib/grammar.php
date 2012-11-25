@@ -8,7 +8,6 @@
  * @author Nate Ferrero
  */
 namespace NateFerrero\u;
-use NateFerrero\u\Runtime;
 
 /**
  * Setup the sparse parser
@@ -38,7 +37,7 @@ Runtime::$parser = new Sparse(array(
         'group-)'     => ')',
         'inclusion'   => '&',
         'dot'         => '.',
-        'identifier'  => '/[a-zA-Z_][a-zA-Z0-9_]+/',
+        'identifier'  => '/[a-zA-Z_][a-zA-Z0-9_]*/',
         'float'       => '/\d+\.\d*/',
         'int'         => '/\d+/',
         'operator'    => explode(' ', '+ - * / % ^ ! && ||'),

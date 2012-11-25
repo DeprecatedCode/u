@@ -8,7 +8,6 @@
  * @author Nate Ferrero
  */
 namespace NateFerrero\u;
-use NateFerrero\u\Runtime;
 
 /**
  * ParseException
@@ -23,7 +22,7 @@ class ParseException extends \Exception {
         $this->_col = $col;
         $this->_code = $code;
         $this->_info = $info;
-        parent::__construct("$this->_code on line $this->_line at column $this->_col: $this->_info");
+        parent::__construct("$this->_code at line $this->_line col $this->_col $this->_info");
     }
 }
 
@@ -111,7 +110,7 @@ class SparseDocument {
      */
     public function descend($token, $match) {
         if(!isset($this->grammar[$token])) {
-            $this->fail("invalid-context: $token");
+            $this->fail("invalid-context `$token`");
         }
         $this->stack[] = &$this->tip;
         $tmp = &$this->child($token, $match);
@@ -170,7 +169,7 @@ class SparseDocument {
                     $literal = true;
                 } else {
                     if(!isset($this->grammar[$content])) {
-                        $this->fail("invalid-content: $content");
+                        $this->fail("invalid-content `$content`");
                     }
                     $scope = &$this->grammar[$content];  # Process as if this were $content
                 }
@@ -229,11 +228,26 @@ class SparseDocument {
              */
             if($literal) {
                 $char = $this->str[$this->pointer];
-                $this->tip['content'] .= $char;
+                if(!isset($this->tip['children'])) {
+                    $this->tip['children'] = array();
+                }
+                /**
+                 * Append to or create an &literal child
+                 */
+                $last = count($this->tip['children']) - 1;
+                if($last === -1 || $this->tip['children'][$last]['token'] !== '&literal') {
+                    $this->tip['children'][] = array(
+                        'token' => '&literal',
+                        'match' => ''
+                    );
+                    $last++;
+                }
+                $this->tip['children'][$last]['match'] .= $char;
                 $this->advance($char);
                 continue;
             }
-            $this->fail("no-match: $this->context");
+
+            $this->fail("no-match in context `$this->context`");
         }
 
         return $this->tree;;
@@ -244,7 +258,7 @@ class SparseDocument {
      */
     public function attempt($token) {
         if(!isset($this->tokens[$token])) {
-            $this->fail("invalid-token: $token");
+            $this->fail("invalid-token `$token`");
         }
         return $this->match($this->tokens[$token]);
     }
@@ -349,7 +363,7 @@ class SparseDocument {
             $this->_line,
             $this->_col,
             $why,
-            $near
+            "`$near`"
         );
     }
 }

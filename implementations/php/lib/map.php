@@ -8,7 +8,6 @@
  * @author Nate Ferrero
  */
 namespace NateFerrero\u;
-use NateFerrero\u\Runtime;
 
 /**
  * Map
@@ -46,14 +45,14 @@ class Map {
     /**
      * Get value
      */
-    public function get($key, &$value) {
+    public function get($key) {
         if(is_int($key)) {
             if(!isset($this->ints[$key])) {
                 Runtime::error('map-key-not-found', $this, $key);
             }
             return $this->ints[$key];
         }
-        else if(is_str($key)) {
+        else if(is_string($key)) {
             if(!isset($this->strings[$key])) {
                 Runtime::error('map-key-not-found', $this, $key);
             }
@@ -62,5 +61,24 @@ class Map {
         else {
             Runtime::error('map-key-invalid-type', $this, $key);
         }
+    }
+
+    /**
+     * Magic getter
+     */
+    public function __get($key) {
+        return $this->get($key);
+    }
+
+    /**
+     * Representation
+     */
+    public function __repr() {
+        $keys = array_keys($this->strings);
+        if(count($keys) > 10) {
+            $keys = array_slice($keys, 0, 10);
+            $keys[] = '...';
+        }
+        return "[". implode(', ', $keys). "]";
     }
 }

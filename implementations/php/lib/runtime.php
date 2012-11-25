@@ -24,21 +24,21 @@ class Runtime {
      * Indicate a problem
      */
     public static function error($code, $context, $object = null) {
-        echo '[u error] ' . $code;
+        $msg = "[u $code";
         if(!is_null($context)) {
-            echo ': ' . self::repr($context);
+            $msg .= ': ' . self::repr($context, true);
         }
         if(!is_null($object)) {
-            echo ': ' . self::repr($object);
+            $msg .= ': ' . self::repr($object);
         }
-        echo "\n";
-        throw new HandledException;
+        $msg .= "]";
+        throw new HandledException($msg);
     }
 
     /**
      * Representation of an object
      */
-    public static function repr(&$var) {
+    public static function repr(&$var, $strpass = false) {
         if(is_null($var)) {
             return "void";
         }
@@ -49,6 +49,9 @@ class Runtime {
             return "$var";
         }
         if(is_string($var)) {
+            if($strpass) {
+                return $var;
+            }
             return "\"$var\"";
         }
         if(is_object($var)) {
@@ -56,33 +59,25 @@ class Runtime {
                 return $var->__repr($var);
             }
         }
-        return '< ? >';
+        return '?';
     }
 
     /**
      * Execute a u program from a file
      */
     public static function run($file) {
-        try {
-            if(!is_file($file)) {
-                self::error('file-not-found', $file);
-            }
-            return self::exec(file_get_contents($file));
-        } catch(HandledException $e) {
-            # Do nothing
+        if(!is_file($file)) {
+            self::error('file-not-found', $file);
         }
+        return self::exec(file_get_contents($file));
     }
 
     /**
      * Execute a u program from a string
      */
     public static function exec($str) {
-        try {
-            $tokens = self::parse($str);
-            echo json_encode($tokens);die;
-        } catch(HandledException $e) {
-            # Do nothing
-        }
+        $engine = new Engine(self::parse($str));
+        return $engine->map;
     }
 
     /**
@@ -93,8 +88,6 @@ class Runtime {
             return self::$parser->apply($str, 'root')->tokenize();
         } catch(ParseException $e) {
             self::error('parse-error', $e->getMessage());
-        } catch(HandledException $e) {
-            # Do nothing
         }
     }
 }

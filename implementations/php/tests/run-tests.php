@@ -11,7 +11,8 @@ require_once(__DIR__ . '/lib/common.php');
  */
 $tests = array(
     'lib/sparse.php' => 'SparseTest',
-    'lib/grammar.php' => 'GrammarTest'
+    'lib/grammar.php' => 'GrammarTest',
+    'lib/engine.php' => 'EngineTest'
 );
 
 /**
@@ -22,6 +23,8 @@ function stringize($x, $key = null) {
         $out = "\"$x\"";
     } else if(is_null($x)) {
         $out = 'NULL';
+    } else if(is_integer($x) || is_float($x)) {
+        $out = "$x";
     } else if(is_bool($x)) {
         $out = $x ? 'TRUE' : 'FALSE';
     } else if(is_object($x)) {
@@ -85,6 +88,8 @@ foreach($tests as $key => $value) {
         $i++;
         echo "    $i) ${value}->${method}()\n";
         if($e instanceof AssertionFailure) {
+            echo "       " . $e->getMessage();
+        } else if($e instanceof NateFerrero\u\HandledException) {
             echo "       " . $e->getMessage();
         } else if($e instanceof Exception) {
             echo "       " . $e->getMessage() . ' on line ' . $e->getLine() . ' of ' .  $e->getFile();

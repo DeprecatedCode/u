@@ -17,7 +17,7 @@ class SparseTest {
          */
         $this->parser = new Sparse(array(
             'root' => array(
-                '&children' => array('group-enter'),
+                '&children' => array('group-enter', 'string'),
                 '&inline' => array('space', 'word')
             ),
             'group-enter' => array(
@@ -25,8 +25,7 @@ class SparseTest {
                 '&exit' => array('group-exit')
             ),
             'string' => array(
-                '&content' => '&literal',    throw new Exception("TEST LITERAL", 1);
-                
+                '&content' => '&literal',
                 '&exit' => array('string')
             ),
             '&tokens' => array(
@@ -126,13 +125,43 @@ class SparseTest {
             'match' => null,
             'children' => array(
                 space_arr(1),
-                word_arr('battle'),    # battle
+                word_arr('battle'),     # battle
                 space_arr(2),
-                word_arr('of'),        # of
+                word_arr('of'),         # of
                 space_arr(3),
-                word_arr('the'),       # the
+                word_arr('the'),        # the
                 space_arr(2),
-                word_arr('ages'),      # ages
+                word_arr('ages'),       # ages
+                space_arr(1)
+            )
+        ));
+    }
+
+    public function testInlineStringOnlyDoc() {
+        $str = '"example"';
+        $tree = $this->parser->apply($str, 'root')->tokenize();
+        check($tree, array(
+            'token' => 'root',
+            'match' => null,
+            'children' => array(
+                str_arr('example')
+            )
+        ));
+    }
+
+    public function testInlineStringDoc() {
+        $str = ' battle  "of   the"  ages ';
+        $tree = $this->parser->apply($str, 'root')->tokenize();
+        check($tree, array(
+            'token' => 'root',
+            'match' => null,
+            'children' => array(
+                space_arr(1),
+                word_arr('battle'),     # battle
+                space_arr(2),
+                str_arr('of   the'),    # of the the
+                space_arr(2),
+                word_arr('ages'),       # ages
                 space_arr(1)
             )
         ));
@@ -256,5 +285,22 @@ function word_arr($word) {
     return array(
         'token' => 'word',
         'match' => $word,
+    );
+}
+
+/**
+ * String token fixture
+ */
+function str_arr($word) {
+    return array(
+        'token' => 'string',
+        'match' => '"',
+        'children' => array(
+            array(
+                'token' => '&literal',
+                'match' => $word
+            )
+        ),
+        'exit' => '"'
     );
 }
