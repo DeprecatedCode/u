@@ -34,7 +34,7 @@ class Map {
         else if(is_int($key)) {
             $this->ints[$key] = $value;
         }
-        else if(is_str($key)) {
+        else if(is_string($key)) {
             $this->strings[$key] = $value;
         }
         else {
@@ -53,6 +53,18 @@ class Map {
             return $this->ints[$key];
         }
         else if(is_string($key)) {
+
+            /**
+             * Reserved items
+             */
+            if($key === 'true') {
+                return true;
+            }
+
+            if($key === 'false') {
+                return false;
+            }
+
             if(!isset($this->strings[$key])) {
                 Runtime::error('map-key-not-found', $this, $key);
             }

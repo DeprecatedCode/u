@@ -40,8 +40,7 @@ Runtime::$parser = new Sparse(array(
         'identifier'  => '/[a-zA-Z_][a-zA-Z0-9_]*/',
         'float'       => '/\d+\.\d*/',
         'int'         => '/\d+/',
-        'operator'    => explode(' ', '+ - * / % ^ ! && ||'),
-        'comparator'  => explode(' ', '== != >= <= > <'),
+        'operator'    => explode(' ', '== != >= <= > < + - * / % ^ ! && ||'),
         'char'        => '/./'
     ),
 

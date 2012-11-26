@@ -9,7 +9,7 @@
  */
 namespace NateFerrero\u;
 
-foreach(explode(' ', 'runtime engine sparse grammar expr map') as $file) {
+foreach(explode(' ', 'runtime engine operation sparse grammar expr map') as $file) {
     require_once(__DIR__ . "/lib/$file.php");
 }
 

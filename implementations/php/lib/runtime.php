@@ -76,7 +76,11 @@ class Runtime {
      * Execute a u program from a string
      */
     public static function exec($str) {
-        $engine = new Engine(self::parse($str));
+        $tree = self::parse($str);
+        $tree['children'][] = array(
+            'token' => 'break', 'match' => null
+        );
+        $engine = new MapEngine($tree);
         return $engine->map;
     }
 

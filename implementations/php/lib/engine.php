@@ -14,33 +14,154 @@ namespace NateFerrero\u;
  */
 class Engine {
 
-	public $map;
-
 	/**
 	 * Constructor
 	 */
 	public function __construct(&$tree) {
+		$this->init();
+		if(isset($tree['children'])) {
+			foreach($tree['children'] as $token) {
+				$this->token($token);
+			}
+		}
+	}
+
+}
+
+/**
+ * Engine for applying tokens in a Map
+ */
+class MapEngine extends Engine {
+	public $map;
+	public $key = null;
+	public $value = null;
+	public $operations = array();
+	public $seek = false;
+
+	/**
+	 * Initialize
+	 */
+	public function init() {
 		$this->map = new Map();
-		$this->context = &$this->map;
-		$this->token($tree);
 	}
 
 	/**
-	 * Input
+	 * Update value
+	 */
+	public function value($value) {
+		/**
+		 * Reduce two values with an operation
+		 */
+		if(count($this->operations) > 0 || !is_null($this->value)) {
+			$this->value = operation($this->value, $value, $this->operations);
+			$this->operations = array();
+		}
+
+		else {
+			$this->value = $value;
+		}
+	}
+
+	/**
+	 * Input into MapEngine
 	 */
 	public function token($token) {
+
 		switch($token['token']) {
+
+			/**
+			 * Whitespace / root
+			 */
 			case 'space':
-			case 'break':
 				break;
+
+			/**
+			 * Line break or comma
+			 */
+			case 'break':
+			case 'sep':
+				if(count($this->operations) > 0) {
+					Runtime::error("trailing-operation", $this->operation);
+				}
+				/**
+				 * Autoincrement keys when null
+				 */
+				if(is_null($this->key)) {
+					$this->key = count($this->map->ints);
+				}
+				$this->map->set($this->key, $this->value);
+				$this->key = null;
+				$this->value = null;
+				$this->seek = false;
+				return;
+
+			/**
+			 * Colon, prepare key (seek = true)
+			 */
+			case 'colon':
+				$this->key = $this->value;
+				$this->value = null;
+				$this->seek = true;
+				return;
+
+			/**
+			 * Strings
+			 */
+			case 'str-1-s':
+			case 'str-1-d':
+			case 'str-3-s':
+			case 'str-3-d':
+				$engine = new StringEngine($token);
+				return $this->value($engine->value());
+
+			/**
+			 * Identifier
+			 */
+			case 'identifier':
+				if($this->seek) {
+					return $this->value($this->map->get($token['match']));
+				} else {
+					return $this->value($token['match']);
+				}
+
+			/**
+			 * Int
+			 */
+			case 'int':
+				return $this->value((int) $token['match']);
+
+			/**
+			 * Float
+			 */
+			case 'float':
+				return $this->value((float) $token['match']);
+
+			/**
+			 * Operator
+			 */
+			case 'operator':
+				$this->operations[] = $token['match'];
+				return;
+
+			/**
+			 * Unknown 
+			 */
 			default:
+				echo "FIX: ";
 				var_dump($token['token']);
 				var_dump($token['match']);
 		}
-		if(isset($token['children'])) {
-			foreach($token['children'] as $next) {
-				$this->token($next);
-			}
-		}
+	}
+}
+
+/**
+ * String engine
+ */
+class StringEngine extends Engine {
+	public function token($token) {
+		;
+	}
+	public function value() {
+		return "string";
 	}
 }
