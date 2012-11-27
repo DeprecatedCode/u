@@ -3,7 +3,7 @@
 /**
  * Run comprehensive tests agains the PHP implementation of u
  */
-define("U_INTERNAL", "YES");
+define("U_NON_INTERACTIVE", "yes");
 require_once(__DIR__ . '/../u.php');
 require_once(__DIR__ . '/lib/common.php');
 

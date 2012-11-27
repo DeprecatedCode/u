@@ -116,7 +116,7 @@ class MapEngine extends Engine {
             case 'str-3-d':
                 $engine = new StringEngine();
                 $engine->tree($token);
-                return $this->value($engine->value);
+                return $this->value($engine->result());
 
             /**
              * Identifier
@@ -191,5 +191,5 @@ class StringEngine extends Engine {
             default:
                 Runtime::error('string-unknown-escape-sequence', $x);
         }
-    } 
+    }
 }

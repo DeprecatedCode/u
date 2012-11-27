@@ -25,6 +25,19 @@ class Map {
     public $strings = array();
 
     /**
+     * Syntax
+     *
+    public $syntax = array(
+        'root' => array(
+            'identifier' => 'root-identifier'
+        ),
+        'root-identifier' => array(
+            '&exec' => array(), 
+            '&assign' => 'assignment'
+        )
+    );*/
+
+    /**
      * Set value
      */
     public function set($key, &$value) {
@@ -53,7 +66,6 @@ class Map {
             return $this->ints[$key];
         }
         else if(is_string($key)) {
-
             /**
              * Reserved items
              */
@@ -61,9 +73,14 @@ class Map {
                 return true;
             }
 
-            if($key === 'false') {
+            else if($key === 'false') {
                 return false;
             }
+
+            else if($key === 'this') {
+                return $this;
+            }
+
 
             if(!isset($this->strings[$key])) {
                 Runtime::error('map-key-not-found', $this, $key);
