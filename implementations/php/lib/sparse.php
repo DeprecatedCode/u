@@ -215,7 +215,7 @@ class SparseDocument {
                          * Absorb right-content (exit)
                          */
                         if($literal && $absorb) {
-                            $this->tip['content'] .= $match;
+                            $this->tip['match'] .= $match;
                         }
                         $this->ascend($match);
                         continue 2;  # Match found, progress forward

@@ -18,6 +18,12 @@ class HandledException extends \Exception {}
  * Runtime class
  */
 class Runtime {
+
+    /**
+     * Current version
+     */
+    public static $version = '0.0.1';
+
     public static $parser;
 
     /**
@@ -80,7 +86,8 @@ class Runtime {
         $tree['children'][] = array(
             'token' => 'break', 'match' => null
         );
-        $engine = new MapEngine($tree);
+        $engine = new MapEngine();
+        $engine->tree($tree);
         return $engine->map;
     }
 

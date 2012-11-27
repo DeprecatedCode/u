@@ -3,6 +3,7 @@
 /**
  * Run comprehensive tests agains the PHP implementation of u
  */
+define("U_INTERNAL", "YES");
 require_once(__DIR__ . '/../u.php');
 require_once(__DIR__ . '/lib/common.php');
 

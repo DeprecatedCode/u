@@ -23,7 +23,9 @@ class EngineTest {
 		$result = Runtime::exec(
 			'a: true && true, b: true && false, c: false && true, d: false && false
 			 e: true || true, f: true || false, g: false || true, h: false || false
-			 i: !true, j: !false, k: true && !false, l: false || !true');
+			 i: !true, j: !false, k: true && !false, l: false || !true
+			 m: false || false || true, n: true && true && false
+			 o: false || true && false, p: true && false || true');
 		check($result->a, true);
 		check($result->b, false);
 		check($result->c, false);
@@ -36,6 +38,10 @@ class EngineTest {
 		check($result->j, true);
 		check($result->k, true);
 		check($result->l, false);
+		check($result->m, true);
+		check($result->n, false);
+		check($result->o, false);
+		check($result->p, true);
 	}
 
 	public function comparatorTest() {

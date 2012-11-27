@@ -1,2 +1,2 @@
-#! /bin/sh
-php ./implementations/php/u.php $1
+#! /usr/bin/env php
+<?php require_once(__DIR__ . '/implementations/php/u.php');
