@@ -28,15 +28,11 @@ class Engine {
 }
 
 /**
- * Engine for applying tokens in a Map
+ * Engine for applying tokens in a Map Context
  */
 class MapEngine extends Engine {
     public $map;
-    public $key = null;
-    public $value = null;
-    public $result = null;
-    public $operations = array();
-    public $seek = false;
+    public $queue = array();
 
     /**
      * Initialize
@@ -46,27 +42,9 @@ class MapEngine extends Engine {
     }
 
     /**
-     * Update value
-     */
-    public function value($value) {
-        /**
-         * Reduce two values with an operation
-         */
-        if(count($this->operations) > 0 || !is_null($this->value)) {
-            $this->value = operation($this->value, $value, $this->operations);
-            $this->operations = array();
-        }
-
-        else {
-            $this->value = $value;
-        }
-    }
-
-    /**
      * Input into MapEngine
      */
     public function token($token) {
-
         switch($token['token']) {
 
             /**
@@ -75,86 +53,92 @@ class MapEngine extends Engine {
             case 'space':
             case 'comment':
             case 'comment-[':
-                break;
+                return;
 
             /**
-             * Line break or comma
+             * Line break or comma triggers execution
              */
             case 'break':
             case 'sep':
-                if(count($this->operations) > 0) {
-                    Runtime::error("trailing-operation", $this->operation);
+                $queue = $this->queue;
+                $this->queue = array();
+                var_dump($queue);
+                try {
+                    $this->result = $this->flush($queue);
+                } catch(HandledException $e) {
+                    $this->result = $e;
                 }
-                /**
-                 * Autoincrement keys when null
-                 */
-                if(is_null($this->key)) {
-                    $this->key = count($this->map->ints);
-                }
-                $this->map->set($this->key, $this->value);
-                $this->key = null;
-                $this->result = $this->value;
-                $this->value = null;
-                $this->seek = false;
                 return;
 
             /**
-             * Colon, prepare key (seek = true)
-             */
-            case 'colon':
-                $this->key = $this->value;
-                $this->value = null;
-                $this->seek = true;
-                return;
-
-            /**
-             * Strings
-             */
-            case 'str-1-s':
-            case 'str-1-d':
-            case 'str-3-s':
-            case 'str-3-d':
-                $engine = new StringEngine();
-                $engine->tree($token);
-                return $this->value($engine->result());
-
-            /**
-             * Identifier
-             */
-            case 'identifier':
-                if($this->seek) {
-                    return $this->value($this->map->get($token['match']));
-                } else {
-                    return $this->value($token['match']);
-                }
-
-            /**
-             * Int
-             */
-            case 'int':
-                return $this->value((int) $token['match']);
-
-            /**
-             * Float
-             */
-            case 'float':
-                return $this->value((float) $token['match']);
-
-            /**
-             * Operator
-             */
-            case 'operator':
-                $this->operations[] = $token['match'];
-                return;
-
-            /**
-             * Unknown 
+             * Queue
              */
             default:
-                echo "FIX: ";
-                var_dump($token['token']);
-                var_dump($token['match']);
+                $this->queue[] = $token;
+                return;
         }
+    }
+
+    /**
+     * Execute and flush the command queue
+     */
+    public function flush($queue) {
+        /**
+         * Check for solo get
+         */
+        $identifier = isset($queue[0])
+            && $queue[0]['token'] == 'identifier';
+
+        /**
+         * Check for set
+         */
+        $cpos = $identifier ? 1 : 0;
+        $colon = isset($queue[$cpos])
+            && $queue[$cpos]['token'] == 'colon';
+
+        $val = null;
+
+        /**
+         * Process solo get
+         */
+        if(count($queue) == 1 && $identifier) {
+            $val = $this->map->get($queue[0]['match']);
+        } else {
+            if($colon) {
+                /**
+                 * Set value in map
+                 */
+                if($identifier) {
+                    $set = array_shift($queue);
+                    $set = $set['match'];
+                } else {
+                    $set = null;
+                }
+
+                /**
+                 * Remove colon from queue
+                 */
+                array_shift($queue);
+            } else {
+                $set = false;
+            }
+
+            /**
+             * Evaluate expression
+             */
+            $engine = new ExprEngine();
+            $tree = array('children' => $queue);
+            $engine->tree($tree);
+            $val = $engine->evaluate();
+
+            /**
+             * Set value if requested
+             */
+            if($set !== false) {
+                $this->map->set($set, $val);
+            }
+        }
+        return $val;
     }
 }
 
@@ -170,6 +154,7 @@ class StringEngine extends Engine {
                 break;
             case '&literal':
                 $this->value .= $token['match'];
+                break;
             default:
                 Runtime::error('invalid-string-token', $token['token']);
         }
@@ -191,5 +176,20 @@ class StringEngine extends Engine {
             default:
                 Runtime::error('string-unknown-escape-sequence', $x);
         }
+    }
+}
+
+/**
+ * Expression engine
+ */
+class ExprEngine extends Engine {
+    public function token($token) {
+        switch($token['token']) {
+            default:
+                Runtime::error('expr-invalid-token', $token['token'], $token['match']);
+        }
+    }
+    public function evaluate() {
+        return 5;
     }
 }

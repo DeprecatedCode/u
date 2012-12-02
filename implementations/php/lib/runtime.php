@@ -12,7 +12,11 @@ namespace NateFerrero\u;
 /**
  * Handled Exception
  */
-class HandledException extends \Exception {}
+class HandledException extends \Exception {
+    public function __repr() {
+        return $this->getMessage();
+    }
+}
 
 /**
  * Runtime class
@@ -29,13 +33,10 @@ class Runtime {
     /**
      * Indicate a problem
      */
-    public static function error($code, $context, $object = null) {
+    public static function error($code, $info = null) {
         $msg = "[u $code";
-        if(!is_null($context)) {
-            $msg .= ': ' . self::repr($context, true);
-        }
-        if(!is_null($object)) {
-            $msg .= ': ' . self::repr($object);
+        if(!is_null($info)) {
+            $msg .= ': ' . self::repr($info, true);
         }
         $msg .= "]";
         throw new HandledException($msg);

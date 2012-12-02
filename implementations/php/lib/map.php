@@ -25,19 +25,6 @@ class Map {
     public $strings = array();
 
     /**
-     * Syntax
-     *
-    public $syntax = array(
-        'root' => array(
-            'identifier' => 'root-identifier'
-        ),
-        'root-identifier' => array(
-            '&exec' => array(), 
-            '&assign' => 'assignment'
-        )
-    );*/
-
-    /**
      * Set value
      */
     public function set($key, &$value) {
@@ -51,7 +38,7 @@ class Map {
             $this->strings[$key] = $value;
         }
         else {
-            Runtime::error('map-key-invalid-type', $this, $key);
+            Runtime::error('map-key-invalid-type', $key);
         }
     }
 
@@ -61,7 +48,7 @@ class Map {
     public function get($key) {
         if(is_int($key)) {
             if(!isset($this->ints[$key])) {
-                Runtime::error('map-key-not-found', $this, $key);
+                Runtime::error('map-key-not-found', $key);
             }
             return $this->ints[$key];
         }
@@ -83,12 +70,12 @@ class Map {
 
 
             if(!isset($this->strings[$key])) {
-                Runtime::error('map-key-not-found', $this, $key);
+                Runtime::error('map-key-not-found', $key);
             }
             return $this->strings[$key];
         }
         else {
-            Runtime::error('map-key-invalid-type', $this, $key);
+            Runtime::error('map-key-invalid-type', $key);
         }
     }
 

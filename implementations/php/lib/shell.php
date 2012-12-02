@@ -265,7 +265,6 @@ while(true) {
      * Handle special commands
      */
     $u_cleared = false;
-    print_r($line);
     if($tline === '') {
         if($line !== null) {
             $u_cleared = true;
